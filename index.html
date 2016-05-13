@@ -1,1 +1,188 @@
-<b>Hello! :)</b>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style media="screen">
+      body {
+        font-family: 'Courier New', Courier;
+        font-size: 20px;
+      }
+      #command {
+        outline: none;
+        border: 0px solid #f00;
+        font-family: 'Courier New', Courier;
+        font-size: 20px;
+        width: 70%;
+      }
+      #commandLine {
+        min-width: 550px;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <script type="text/javascript">
+
+      var commandHistory = [];
+      var commandHistoryPosition = 0;
+
+      var data = {
+        'links.html' : 'My home page is <a href="http://www.johnfreier.com">http://www.johnfreier.com</a>',
+        'about.html' : 'I am a developer who has lotz of fun coding.'
+      }
+
+      var cmd = new function() {
+
+        var _private = {};
+
+        _private.commandLS = function() {
+          var result = '';
+          for (var file in data) {
+            result += file + '&nbsp;&nbsp;&nbsp;';
+          }
+          return result;
+        };
+
+        _private.commandHELP = function() {
+          var result = 'available commands:<br />';
+          for (var commandName in this) {
+            if (commandName.indexOf('command') == 0) {
+              result += commandName.replace('command','').toLowerCase() + ' ';
+            }
+          }
+          return result;
+        };
+
+        _private.commandCAT = function(action) {
+          var result = 'No file name found: ' + action;
+          if (action == undefined) {
+            result = 'No file name was supplied.';
+          } else if (data.hasOwnProperty(action)) {
+            result = data[action];
+          }
+          return result;
+        };
+
+        _private.commandHISTORY = function() {
+          var result = "";
+          commandHistory.forEach(function(item, index) {
+            result += index + ' : ' + item + '<br />';
+          });
+          if (result.length > 1) {
+            result = result.substring(0, result.length - 6);
+          }
+          return result;
+        };
+
+        _private.commandCLEAR = function() {
+          $('#log').html('');
+          return '';
+        };
+
+        _private.commandPWD = function() {
+          return '/home'
+        };
+
+      this.run = function(commandline) {
+
+          var display = '';
+
+          var commandEnd = commandline.indexOf(' ');
+          var command = (commandEnd > -1) ? commandline.substring(0, commandEnd) : commandline;
+          var parameters = (commandEnd > -1) ? commandline.substring(commandEnd + 1, commandline.length).split(' ') : [];
+          var commandFunction = 'command' + command.toUpperCase();
+
+          //console.log('command:' + command);
+          //console.log('parameters:' + JSON.stringify(parameters));
+
+          if (_private.hasOwnProperty(commandFunction)) {
+            display = _private[commandFunction].apply(_private, parameters);
+          } else {
+            display = '-bash: ' + command + ': command not found';
+          }
+
+          return display;
+        }
+
+      };
+
+      $( document ).ready(function() {
+
+        $('#log').html('Last login: ' + (new Date()).toString() + '<br />');
+
+        $('#command').focus();
+
+        $('#command').on('keypress', function(event) {
+
+          //console.log('key:' + event.keyCode);
+
+          if(event.keyCode == 13) {
+
+            var command = $('#command').val();
+            var log = $('#log').html();
+
+            log = log + 'johnfreier$ ' + command + '<br />';
+            $('#log').html(log);
+
+            var display = '';
+            try {
+              display = cmd.run(command);
+            } catch(e) {
+              display = 'Error running command.';
+              console.warn(e);
+            }
+
+            if (display.length > 1) {
+              $('#log').html($('#log').html() + display + '<br />');
+            }
+
+            $('#command').val('');
+
+            commandHistory.push(command);
+            commandHistoryPosition = commandHistory.length;
+
+          }
+
+        });
+
+        $(document).on('keydown', function(event) {
+          //console.log('key:' + event.keyCode);
+          if (event.keyCode == 38) {
+            if( commandHistoryPosition > 0) {
+              commandHistoryPosition--;
+            }
+            $('#command').val(commandHistory[commandHistoryPosition]);
+          } else if (event.keyCode == 40) {
+            if (commandHistoryPosition < commandHistory.length) {
+              commandHistoryPosition++
+            }
+            $('#command').val(commandHistory[commandHistoryPosition]);
+          };
+
+        });
+
+        $(document).on('click', function() {
+          $('#command').focus();
+        });
+
+      });
+
+      function getParameter(str, number) {
+        var result;
+        var token = str.split(' ');
+        if (token.length - 1 <= number) {
+          result = token[number];
+        }
+        return result;
+      };
+
+    </script>
+  </head>
+  <body>
+    <div id="log">
+
+    </div>
+    <div id="commandLine">
+        johnfreier$ <input type="text" id="command" />
+    </div>
+  </body>
+</html>
